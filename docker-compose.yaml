@@ -24,26 +24,22 @@ services:
     image: ocr-api:cpu
     container_name: ocr-api-cpu
     environment:
-      - OCR_USE_GPU=false
-      - OCR_LANGS=["en","ar"]
-      - OCR_MAX_SIDE=1600
-      - OCR_ALLOW_UPSCALE=false
-      - OCR_MIN_CONF=0.65
-      - OCR_PARAGRAPH=false
-      - OCR_MAX_IMAGE_MEGA_PIXELS=60
-      - OCR_LOG_LEVEL=INFO
-      - VISION_MODEL_NAME=llava:latest
-      - FALLBACK_MODEL_NAME=qariocr:latest
       - OLLAMA_HOST=ollama
-      - OLLAMA_PORT=11434
-      - PADDLEOCR_USE_GPU=false
       - PADDLEOCR_MODEL_DIR=/app/paddleocr_models
-      - PADDLEOCR_LANGS=en,ar
+      - EASYOCR_MODEL_DIR=/app/easyocr_models
+      - LLAVA_MODEL_DIR=/app/llava_models
+      - PP_OCR_V5_MODEL_DIR=/app/pp_ocrv5_models
+      - PP_STRUCTURE_V3_MODEL_DIR=/app/pp_structurev3_models
+      - PP_CHATOCR_V4_MODEL_DIR=/app/pp_chatocrv4_models
     ports:
       - "8000:8000"
     volumes:
       - ./easyocr_models:/app/easyocr_models
+      - ./llava_models:/app/llava_models
       - ./paddleocr_models:/app/paddleocr_models
+      - ./pp_ocrv5_models:/app/pp_ocrv5_models
+      - ./pp_structurev3_models:/app/pp_structurev3_models
+      - ./pp_chatocrv4_models:/app/pp_chatocrv4_models
     depends_on:
       - ollama
     restart: unless-stopped
@@ -54,6 +50,16 @@ services:
       dockerfile: Dockerfile.gpu
     image: ocr-api:gpu
     container_name: ocr-api-gpu
+    environment:
+      - OCR_USE_GPU=true
+      - OLLAMA_HOST=ollama
+      - PADDLEOCR_USE_GPU=true
+      - PADDLEOCR_MODEL_DIR=/app/paddleocr_models
+      - EASYOCR_MODEL_DIR=/app/easyocr_models
+      - LLAVA_MODEL_DIR=/app/llava_models
+      - PP_OCR_V5_MODEL_DIR=/app/pp_ocrv5_models
+      - PP_STRUCTURE_V3_MODEL_DIR=/app/pp_structurev3_models
+      - PP_CHATOCR_V4_MODEL_DIR=/app/pp_chatocrv4_models
     deploy:
       resources:
         reservations:
@@ -61,27 +67,15 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
-    environment:
-      - OCR_USE_GPU=true
-      - OCR_LANGS=["en","ar"]
-      - OCR_MAX_SIDE=1600
-      - OCR_ALLOW_UPSCALE=false
-      - OCR_MIN_CONF=0.65
-      - OCR_PARAGRAPH=false
-      - OCR_MAX_IMAGE_MEGA_PIXELS=60
-      - OCR_LOG_LEVEL=INFO
-      - VISION_MODEL_NAME=llava:latest
-      - FALLBACK_MODEL_NAME=qariocr:latest
-      - OLLAMA_HOST=ollama
-      - OLLAMA_PORT=11434
-      - PADDLEOCR_USE_GPU=true
-      - PADDLEOCR_MODEL_DIR=/app/paddleocr_models
-      - PADDLEOCR_LANGS=en,ar
     ports:
       - "8001:8000"
     volumes:
       - ./easyocr_models:/app/easyocr_models
+      - ./llava_models:/app/llava_models
       - ./paddleocr_models:/app/paddleocr_models
+      - ./pp_ocrv5_models:/app/pp_ocrv5_models
+      - ./pp_structurev3_models:/app/pp_structurev3_models
+      - ./pp_chatocrv4_models:/app/pp_chatocrv4_models
     depends_on:
       - ollama
     restart: unless-stopped

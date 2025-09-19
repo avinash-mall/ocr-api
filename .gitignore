@@ -26,6 +26,13 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+paddleocr_models/
+easyocr_models/
+llava_models/
+ollama_models/
+pp_ocrv5_models/
+pp_structurev3_models/
+pp_chatocrv4_models/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -131,7 +138,7 @@ dmypy.json
 # OCR API specific files
 # Model directories (these can be large)
 easyocr_models/
-qariocr_models/
+llava_models/
 ollama_models/
 
 # Test images and temporary files
@@ -215,7 +222,3 @@ settings.local.py
 *.tar.bz2
 *.7z
 *.rar
-
-# But keep essential model files if they're small
-!easyocr_models/*.pth
-!easyocr_models/*.zip

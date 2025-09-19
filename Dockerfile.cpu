@@ -35,12 +35,7 @@ FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    QARIOCR_MODEL_ID=NAMAA-Space/Qari-OCR-v0.3-VL-2B-Instruct \
-    QARIOCR_MODEL_DIR=/app/qariocr_models \
-    QARIOCR_LOAD_4BIT=false \
-    QARIOCR_DEVICE_MAP=auto \
-    QARIOCR_TORCH_DTYPE=auto
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
 # Install only essential runtime dependencies
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
@@ -57,7 +52,7 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 COPY main.py /app/main.py
 
 # Create model directories
-RUN mkdir -p /app/easyocr_models /app/qariocr_models /app/paddleocr_models
+RUN mkdir -p /app/easyocr_models /app/llava_models /app/paddleocr_models /app/pp_ocrv5_models /app/pp_structurev3_models /app/pp_chatocrv4_models
 
 # Aggressive cleanup to reduce image size
 RUN apt-get autoremove -y && \
@@ -76,6 +71,6 @@ EXPOSE 8000
 HEALTHCHECK CMD curl -f http://localhost:8000/health || exit 1
 
 # Volume declarations for model directories
-VOLUME ["/app/easyocr_models", "/app/qariocr_models", "/app/paddleocr_models"]
+VOLUME ["/app/easyocr_models", "/app/llava_models", "/app/paddleocr_models", "/app/pp_ocrv5_models", "/app/pp_structurev3_models", "/app/pp_chatocrv4_models"]
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
