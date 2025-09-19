@@ -1,0 +1,90 @@
+#!filepath: docker-compose.yaml
+name: ocr
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+
+  ocr-api-cpu:
+    build:
+      context: .
+      dockerfile: Dockerfile.cpu
+    image: ocr-api:cpu
+    container_name: ocr-api-cpu
+    environment:
+      - OCR_USE_GPU=false
+      - OCR_LANGS=["en","ar"]
+      - OCR_MAX_SIDE=1600
+      - OCR_ALLOW_UPSCALE=false
+      - OCR_MIN_CONF=0.65
+      - OCR_PARAGRAPH=false
+      - OCR_MAX_IMAGE_MEGA_PIXELS=60
+      - OCR_LOG_LEVEL=INFO
+      - VISION_MODEL_NAME=llava:latest
+      - FALLBACK_MODEL_NAME=qariocr:latest
+      - OLLAMA_HOST=ollama
+      - OLLAMA_PORT=11434
+      - PADDLEOCR_USE_GPU=false
+      - PADDLEOCR_MODEL_DIR=/app/paddleocr_models
+      - PADDLEOCR_LANGS=en,ar
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./easyocr_models:/app/easyocr_models
+      - ./paddleocr_models:/app/paddleocr_models
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
+  ocr-api-gpu:
+    build:
+      context: .
+      dockerfile: Dockerfile.gpu
+    image: ocr-api:gpu
+    container_name: ocr-api-gpu
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      - OCR_USE_GPU=true
+      - OCR_LANGS=["en","ar"]
+      - OCR_MAX_SIDE=1600
+      - OCR_ALLOW_UPSCALE=false
+      - OCR_MIN_CONF=0.65
+      - OCR_PARAGRAPH=false
+      - OCR_MAX_IMAGE_MEGA_PIXELS=60
+      - OCR_LOG_LEVEL=INFO
+      - VISION_MODEL_NAME=llava:latest
+      - FALLBACK_MODEL_NAME=qariocr:latest
+      - OLLAMA_HOST=ollama
+      - OLLAMA_PORT=11434
+      - PADDLEOCR_USE_GPU=true
+      - PADDLEOCR_MODEL_DIR=/app/paddleocr_models
+      - PADDLEOCR_LANGS=en,ar
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./easyocr_models:/app/easyocr_models
+      - ./paddleocr_models:/app/paddleocr_models
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
+volumes:
+  ollama_data:

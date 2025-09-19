@@ -1,0 +1,16 @@
+#!filepath: requirements.txt
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+python-multipart>=0.0.9
+pillow>=10.3.0
+opencv-python-headless==4.5.5.64
+easyocr>=1.7.1
+numpy>=1.26.0,<2.0.0
+scipy>=1.11.0
+pydantic>=2.7.0
+pydantic-settings>=2.2.1
+torch>=2.1.0
+torchvision>=0.16.0
+requests>=2.31.0
+paddlepaddle>=2.6.0
+paddleocr>=2.7.0
