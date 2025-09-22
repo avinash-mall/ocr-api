@@ -1,0 +1,28 @@
+# Common requirements for all OCR API containers
+# Core FastAPI and server
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+python-multipart>=0.0.9
+
+# Image processing and computer vision
+pillow>=10.3.0
+opencv-python-headless>=4.5.5.64
+numpy>=1.26.0,<2.0.0
+scipy>=1.11.0
+scikit-image>=0.21.0
+
+# Data validation and serialization
+pydantic>=2.7.0
+
+# HTTP requests and networking
+requests>=2.31.0
+
+# EasyOCR
+easyocr>=1.7.1
+
+# PyTorch (will be overridden in GPU builds)
+torch>=2.1.0
+
+# Arabic text shaping (optional but recommended)
+arabic-reshaper>=3.0.0
+python-bidi>=0.4.2

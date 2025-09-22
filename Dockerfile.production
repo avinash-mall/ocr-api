@@ -1,0 +1,121 @@
+# =============================================================================
+# Production Dockerfile for OCR API - Single Stage with Runtime Model Mounting
+# =============================================================================
+# This Dockerfile creates optimized images for both CPU and GPU deployments
+# with models mounted at runtime instead of baked into the image.
+
+# ---------- CPU Stage ----------
+FROM python:3.10-slim AS cpu
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    DEBIAN_FRONTEND=noninteractive \
+    OCR_USE_GPU=false \
+    PADDLEOCR_USE_GPU=false \
+    EASYOCR_MODEL_DIR=/opt/easyocr_models \
+    PADDLEOCR_HOME=/opt/paddleocr_models
+
+# System dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    libgomp1 \
+    libfontconfig1 \
+    libfreetype6 \
+    libx11-6 \
+    fonts-dejavu-core \
+    fontconfig \
+    wget \
+    curl \
+    libgl1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender1 \
+    libgthread-2.0-0 \
+    && update-ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy requirements and install dependencies
+COPY requirements-common.txt /tmp/requirements.txt
+COPY main.py /app/
+COPY scripts/ /app/scripts/
+
+# Install CPU PaddlePaddle and other dependencies
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir "paddlepaddle>=3.0.0,<4.0.0" \
+    && pip install --no-cache-dir -r /tmp/requirements.txt \
+    && pip install --no-cache-dir "paddleocr[doc-parser]" --no-deps \
+    && pip install --no-cache-dir uvicorn
+
+# Create model directories (will be mounted at runtime)
+RUN mkdir -p /opt/easyocr_models /opt/paddleocr_models
+
+# Create non-root user for security
+RUN useradd -m -u 1000 app && chown -R app:app /app
+USER app
+
+EXPOSE 8000
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+# ---------- GPU Runtime (Torch GPU + Paddle CPU) ----------
+FROM pytorch/pytorch:2.1.0-cuda11.8-cudnn8-runtime AS gpu
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    DEBIAN_FRONTEND=noninteractive \
+    EASYOCR_MODEL_DIR=/opt/easyocr_models \
+    PADDLEOCR_HOME=/opt/paddleocr_models \
+    OCR_USE_GPU=true \
+    PADDLEOCR_USE_GPU=false
+
+# Minimal system libs for OpenCV/EasyOCR
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 libglib2.0-0 ffmpeg fonts-dejavu-core && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# ---- app files
+COPY requirements-common.txt /tmp/requirements.txt
+COPY main.py /app/
+COPY scripts/ /app/scripts/
+
+# 1) Install your deps (torch is already GPU-enabled in base, so this won't reinstall it)
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+
+# 2) Install Paddle **CPU** + PaddleOCR (GPU wheel omitted on purpose here)
+RUN pip install --no-cache-dir "paddlepaddle==3.0.0" \
+ && pip install --no-cache-dir "paddleocr[doc-parser]" \
+ && pip install --no-cache-dir uvicorn
+
+# 3) Pre-create model folders (your app requires them to exist at startup)
+RUN mkdir -p /opt/easyocr_models /opt/paddleocr_models
+
+# 4) Pre-download EasyOCR models so startup doesn't fail with download_disabled=False
+RUN python - <<'PY'
+import os, easyocr
+os.makedirs("/opt/easyocr_models", exist_ok=True)
+easyocr.Reader(['en','ar'], gpu=True,
+               model_storage_directory='/opt/easyocr_models',
+               user_network_directory='/opt/easyocr_models',
+               download_enabled=True)
+print("✓ EasyOCR models downloaded")
+PY
+
+# 5) Sanity checks to verify CUDA availability
+RUN python - <<'PY'
+import torch, paddle, os
+print("torch.cuda.is_available:", torch.cuda.is_available())
+print("Using GPU for EasyOCR:", os.getenv("OCR_USE_GPU"))
+print("Using GPU for PaddleOCR:", os.getenv("PADDLEOCR_USE_GPU"))
+print("paddle.is_compiled_with_cuda:", getattr(paddle, "is_compiled_with_cuda", lambda: None)())
+PY
+
+# Create non-root user for security
+RUN useradd -m -u 1000 app && chown -R app:app /app
+USER app
+
+EXPOSE 8000
+CMD ["uvicorn","main:app","--host","0.0.0.0","--port","8000"]
