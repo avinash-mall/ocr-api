@@ -46,7 +46,7 @@ COPY scripts/ /app/scripts/
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir "paddlepaddle>=3.0.0,<4.0.0" \
     && pip install --no-cache-dir -r /tmp/requirements.txt \
-    && pip install --no-cache-dir "paddleocr[doc-parser]" --no-deps \
+    && pip install --no-cache-dir "paddleocr[doc-parser]" \
     && pip install --no-cache-dir uvicorn
 
 # Create model directories (will be mounted at runtime)

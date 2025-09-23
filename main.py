@@ -148,7 +148,6 @@ def _get_paddle_reader(lang: str):
                         lang=lang,
                         use_textline_orientation=True,
                         enable_mkldnn=not PADDLE_USE_GPU,
-                        use_gpu=PADDLE_USE_GPU,
                         cpu_threads=4
                     )
                     print(f"PaddleOCR initialized successfully for {lang}")
